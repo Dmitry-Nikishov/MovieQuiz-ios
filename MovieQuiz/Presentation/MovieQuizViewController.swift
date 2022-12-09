@@ -49,30 +49,35 @@ final class MovieQuizViewController: UIViewController {
                 correctAnswer: false)
         ]
 
-    private lazy var quizStatistics = QuizStatistics(
-        currentQuestionIndex: 0,
-        correctAnswers: 0,
-        totalQuestions: self.questions.count
-    )
-            
+    private lazy var quizStatistics: QuizStatistics = {
+        QuizStatistics(
+            currentQuestionIndex: 0,
+            correctAnswers: 0,
+            totalQuestions: self.questions.count
+        )
+    }()
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
         setupImageViewBorder()
-        showFirstQuestion()
+        showQuizQuestion()
     }
     
     private func setupImageViewBorder() {
         imageView.layer.masksToBounds = true
-        imageView.layer.cornerRadius = 6
+        imageView.layer.cornerRadius = AppUiConstants.imageViewCornerRadius
     }
     
-    private func showFirstQuestion() {
+    private func resetQuizStatistics() {
         quizStatistics = QuizStatistics(
             currentQuestionIndex: 0,
             correctAnswers: 0,
             totalQuestions: self.questions.count
         )
+    }
+    
+    private func showQuizQuestion() {
         show(quiz: getCurrentStepViewModel())
     }
     
@@ -112,7 +117,8 @@ final class MovieQuizViewController: UIViewController {
         ) { [weak self] _ in
             guard let self = self else { return }
             
-            self.showFirstQuestion()
+            self.resetQuizStatistics()
+            self.showQuizQuestion()
         }
             
         alert.addAction(action)
@@ -131,7 +137,7 @@ final class MovieQuizViewController: UIViewController {
     private func showAnswerResult(isCorrect: Bool) {
         quizStatistics.correctAnswers += isCorrect ? 1 : 0
 
-        imageView.layer.borderWidth = 8
+        imageView.layer.borderWidth = AppUiConstants.imageViewBorderWidthWhenDisplayed
         imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
@@ -154,19 +160,19 @@ final class MovieQuizViewController: UIViewController {
             showResultView()
         } else {
             quizStatistics.currentQuestionIndex += 1
-            show(quiz: getCurrentStepViewModel())
+            showQuizQuestion()
         }
     }
     
     @IBAction private func noButtonClicked(_ sender: UIButton) {
         showAnswerResult(
-            isCorrect: false == questions[quizStatistics.currentQuestionIndex].correctAnswer
+            isCorrect: !questions[quizStatistics.currentQuestionIndex].correctAnswer
         )
     }
     
     @IBAction private func yesButtonClicked(_ sender: UIButton) {
         showAnswerResult(
-            isCorrect: true == questions[quizStatistics.currentQuestionIndex].correctAnswer
+            isCorrect: questions[quizStatistics.currentQuestionIndex].correctAnswer
         )
     }
 }
@@ -207,5 +213,10 @@ extension MovieQuizViewController {
         var isQuizFinished: Bool {
             currentQuestionIndex == totalQuestions - 1
         }
+    }
+    
+    enum AppUiConstants {
+        static let imageViewBorderWidthWhenDisplayed: CGFloat = 8
+        static let imageViewCornerRadius: CGFloat = 20
     }
 }
