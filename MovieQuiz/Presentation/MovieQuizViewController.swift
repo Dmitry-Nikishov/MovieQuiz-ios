@@ -56,6 +56,8 @@ final class MovieQuizViewController: UIViewController {
             totalQuestions: self.questions.count
         )
     }()
+    
+    private let tapBuffer = TapBuffer(queue: .main)
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -164,16 +166,28 @@ final class MovieQuizViewController: UIViewController {
         }
     }
     
-    @IBAction private func noButtonClicked(_ sender: UIButton) {
+    private func noClickHandler() {
         showAnswerResult(
             isCorrect: !questions[quizStatistics.currentQuestionIndex].correctAnswer
         )
     }
     
-    @IBAction private func yesButtonClicked(_ sender: UIButton) {
+    private func yesClickHandler() {
         showAnswerResult(
             isCorrect: questions[quizStatistics.currentQuestionIndex].correctAnswer
         )
+    }
+    
+    @IBAction private func noButtonClicked(_ sender: UIButton) {
+        tapBuffer.tap { [weak self] in
+            self?.noClickHandler()
+        }
+    }
+    
+    @IBAction private func yesButtonClicked(_ sender: UIButton) {
+        tapBuffer.tap { [weak self] in
+            self?.yesClickHandler()
+        }
     }
 }
 
