@@ -7,7 +7,7 @@
 
 import UIKit
 
-class AlertPresenter {
+final class AlertPresenter {
     weak var controller: UIViewController?
 
     func show(model: AlertModel) {
