@@ -50,6 +50,9 @@ class QuestionFactory: QuestionFactoryProtocol {
 //                text: "Рейтинг этого фильма больше чем 6?",
 //                correctAnswer: false)
 //        ]
+    private enum QuestionLoadingErrors: Error {
+        case notAbleToConvertDataToImage
+    }
     
     private var movies: [MostPopularMovie] = []
     
@@ -88,7 +91,11 @@ class QuestionFactory: QuestionFactoryProtocol {
             do {
                 imageData = try Data(contentsOf: movie.resizedImageURL)
             } catch {
-                print("Failed to load image")
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    self.delegate?.didFailToLoadData(with: QuestionLoadingErrors.notAbleToConvertDataToImage)
+                }
+                return
             }
             
             let rating = Float(movie.rating) ?? 0

@@ -12,6 +12,10 @@ protocol MoviesLoading {
 }
 
 struct MoviesLoader: MoviesLoading {
+    private enum ServerCornerCaseError: Error {
+        case emptyItemsList
+    }
+
     // MARK: - NetworkClient
     private let networkClient = NetworkClient()
     
@@ -30,7 +34,11 @@ struct MoviesLoader: MoviesLoading {
             case .success(let data):
                 do {
                     let mostPopularMovies = try JSONDecoder().decode(MostPopularMovies.self, from: data)
-                    handler(.success(mostPopularMovies))
+                    if mostPopularMovies.items.isEmpty {
+                        handler(.failure(ServerCornerCaseError.emptyItemsList))
+                    } else {
+                        handler(.success(mostPopularMovies))
+                    }
                 } catch {
                     handler(.failure(error))
                 }
