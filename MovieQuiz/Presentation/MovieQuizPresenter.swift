@@ -12,6 +12,8 @@ final class MovieQuizPresenter {
     
     private static let tapBufferDelay: Double = 0.4
     
+    private weak var viewController: MovieQuizViewController?
+    
     private lazy var quizStatistics: QuizStatistics = {
         QuizStatistics(
             currentQuestionIndex: 0,
@@ -20,6 +22,8 @@ final class MovieQuizPresenter {
         )
     }()
     
+    private var questionFactory: QuestionFactoryProtocol?
+
     private let tapBuffer = TapBuffer(
         queue: .main,
         delay: tapBufferDelay
@@ -53,7 +57,13 @@ final class MovieQuizPresenter {
         quizStatistics.currentQuestionIndex += 1
     }
     
-    weak var viewController: MovieQuizViewController?
+    init(viewController vc: MovieQuizViewController) {
+        viewController = vc
+        
+        questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
+        questionFactory?.loadData()
+        viewController?.showLoadingIndicator()
+    }
     
     var correctAnswers: Int {
         quizStatistics.correctAnswers
@@ -108,8 +118,24 @@ final class MovieQuizPresenter {
             viewController?.showResultView()
         } else {
             switchToNextQuestion()
-            viewController?.showQuizQuestion()
+            questionFactory?.requestNextQuestion()
         }
     }
+    
+    func restartGame() {
+        resetQuestionIndex()
+        questionFactory?.requestNextQuestion()
+    }
+}
 
+extension MovieQuizPresenter: QuestionFactoryDelegate {
+    func didLoadDataFromServer() {
+        viewController?.hideLoadingIndicator()
+        questionFactory?.requestNextQuestion()
+    }
+        
+    func didFailToLoadData(with error: Error) {
+        let message = error.localizedDescription
+        viewController?.showNetworkError(message: message)
+    }        
 }

@@ -1,22 +1,13 @@
 import UIKit
 
 final class MovieQuizViewController: UIViewController {
-    
     @IBOutlet private weak var counterLabel: UILabel!
     @IBOutlet private weak var textLabel: UILabel!
     @IBOutlet private weak var imageView: UIImageView!
-    
     @IBOutlet private weak var activityIndicator: UIActivityIndicatorView!
     
-    private let presenter = MovieQuizPresenter()
-    
-    private lazy var questionFactory: QuestionFactoryProtocol = {
-        QuestionFactory(
-            moviesLoader: MoviesLoader(),
-            delegate: self
-        )
-    }()
-    
+    private var presenter: MovieQuizPresenter!
+        
     private lazy var alertPresenter: AlertPresenter = {
         let presenter = AlertPresenter()
         presenter.controller = self
@@ -30,38 +21,11 @@ final class MovieQuizViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        presenter.viewController = self
+        presenter = MovieQuizPresenter(viewController: self)
         setupImageViewBorder()
         showLoadingIndicator()
-        questionFactory.loadData()
     }
-    
-    private func hideLoadingIndicator() {
-        activityIndicator.stopAnimating()
-    }
-    
-    private func showNetworkError(message: String) {
-        hideLoadingIndicator()
-        
-        let model = AlertModel(
-            title: "Ошибка",
-            message: message,
-            buttonText: "Попробовать еще раз"
-        ) { [weak self] in
-            guard let self = self else { return }
                 
-            self.presenter.resetQuestionIndex()
-            self.questionFactory.requestNextQuestion()
-        }
-            
-        alertPresenter.show(model: model)
-    }
-    
-    private func showLoadingIndicator() {
-        activityIndicator.isHidden = false
-        activityIndicator.startAnimating()
-    }
-    
     private func setupImageViewBorder() {
         imageView.layer.masksToBounds = true
         imageView.layer.cornerRadius = AppUiConstants.imageViewCornerRadius
@@ -75,18 +39,38 @@ final class MovieQuizViewController: UIViewController {
             completion: { [weak self] in
                 guard let self = self else { return }
                 
-                self.presenter.resetQuestionIndex()
-                self.showQuizQuestion()
+                self.presenter.restartGame()
             }
         )
         
         alertPresenter.show(model: alertInfo)
     }
 
-    func showQuizQuestion() {
-        questionFactory.requestNextQuestion()
+    func showLoadingIndicator() {
+        activityIndicator.isHidden = false
+        activityIndicator.startAnimating()
     }
-    
+
+    func showNetworkError(message: String) {
+        hideLoadingIndicator()
+        
+        let model = AlertModel(
+            title: "Ошибка",
+            message: message,
+            buttonText: "Попробовать еще раз"
+        ) { [weak self] in
+            guard let self = self else { return }
+                
+            self.presenter.restartGame()
+        }
+            
+        alertPresenter.show(model: model)
+    }
+
+    func hideLoadingIndicator() {
+        activityIndicator.stopAnimating()
+    }
+        
     func showResultView() {
         statisticsService.store(
             correctAnswers: presenter.correctAnswers,
@@ -144,21 +128,5 @@ extension MovieQuizViewController {
     enum AppUiConstants {
         static let imageViewBorderWidthWhenDisplayed: CGFloat = 8
         static let imageViewCornerRadius: CGFloat = 20
-    }
-}
-
-extension MovieQuizViewController: QuestionFactoryDelegate {
-    // MARK: - QuestionFactoryDelegate
-    func didReceiveNextQuestion(question: QuizQuestion?) {
-        presenter.didReceiveNextQuestion(question: question)
-    }
-    
-    func didLoadDataFromServer() {
-        hideLoadingIndicator()
-        questionFactory.requestNextQuestion()
-    }
-
-    func didFailToLoadData(with error: Error) {
-        showNetworkError(message: error.localizedDescription)
     }
 }
