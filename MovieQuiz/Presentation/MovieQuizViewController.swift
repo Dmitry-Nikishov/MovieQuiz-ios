@@ -26,8 +26,25 @@ final class MovieQuizViewController: UIViewController {
         imageView.layer.masksToBounds = true
         imageView.layer.cornerRadius = AppUiConstants.imageViewCornerRadius
     }
-                
-    private func show(quiz result: QuizResultsViewModel) {
+                                    
+    @IBAction private func noButtonClicked(_ sender: UIButton) {
+        presenter.noButtonClicked()
+    }
+    
+    @IBAction private func yesButtonClicked(_ sender: UIButton) {
+        presenter.yesButtonClicked()
+    }
+}
+
+extension MovieQuizViewController {    
+    enum AppUiConstants {
+        static let imageViewBorderWidthWhenDisplayed: CGFloat = 8
+        static let imageViewCornerRadius: CGFloat = 20
+    }
+}
+
+extension MovieQuizViewController: MovieQuizViewControllerProtocol {
+    func show(quiz result: QuizResultsViewModel) {
         let alertInfo = AlertModel(
             title: result.title,
             message: result.text,
@@ -41,10 +58,26 @@ final class MovieQuizViewController: UIViewController {
         
         alertPresenter.show(model: alertInfo)
     }
+    
+    func show(quiz step: QuizStepViewModel) {
+        counterLabel.text = step.questionNumber
+        textLabel.text = step.question
+        imageView.image = step.image
+        imageView.layer.borderWidth = 0
+    }
+
+    func highlightImageBorder(isCorrectAnswer: Bool) {
+        imageView.layer.borderWidth = AppUiConstants.imageViewBorderWidthWhenDisplayed
+        imageView.layer.borderColor = isCorrectAnswer ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
+    }
 
     func showLoadingIndicator() {
         activityIndicator.isHidden = false
         activityIndicator.startAnimating()
+    }
+
+    func hideLoadingIndicator() {
+        activityIndicator.stopAnimating()
     }
 
     func showNetworkError(message: String) {
@@ -62,11 +95,7 @@ final class MovieQuizViewController: UIViewController {
             
         alertPresenter.show(model: model)
     }
-
-    func hideLoadingIndicator() {
-        activityIndicator.stopAnimating()
-    }
-        
+    
     func showResultView() {
         let message = presenter.makeResultsMessage()
         
@@ -77,32 +106,5 @@ final class MovieQuizViewController: UIViewController {
         )
         
         show(quiz: viewModel)
-    }
-        
-    func show(quiz step: QuizStepViewModel) {
-        counterLabel.text = step.questionNumber
-        textLabel.text = step.question
-        imageView.image = step.image
-        imageView.layer.borderWidth = 0
-    }
-
-    func highlightImageBorder(isCorrectAnswer: Bool) {
-        imageView.layer.borderWidth = AppUiConstants.imageViewBorderWidthWhenDisplayed
-        imageView.layer.borderColor = isCorrectAnswer ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
-    }
-    
-    @IBAction private func noButtonClicked(_ sender: UIButton) {
-        presenter.noButtonClicked()
-    }
-    
-    @IBAction private func yesButtonClicked(_ sender: UIButton) {
-        presenter.yesButtonClicked()
-    }
-}
-
-extension MovieQuizViewController {    
-    enum AppUiConstants {
-        static let imageViewBorderWidthWhenDisplayed: CGFloat = 8
-        static let imageViewCornerRadius: CGFloat = 20
     }
 }

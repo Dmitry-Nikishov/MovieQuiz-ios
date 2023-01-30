@@ -12,7 +12,7 @@ final class MovieQuizPresenter {
     
     private static let tapBufferDelay: Double = 0.4
     
-    private weak var viewController: MovieQuizViewController?
+    private weak var viewController: MovieQuizViewControllerProtocol?
     
     private lazy var statisticsService: StatisticService = {
         StatisticServiceImplementation()
@@ -91,7 +91,7 @@ final class MovieQuizPresenter {
         quizStatistics.correctAnswers += isCorrect ? 1 : 0
     }
     
-    init(viewController vc: MovieQuizViewController) {
+    init(viewController vc: MovieQuizViewControllerProtocol) {
         viewController = vc
         
         questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
@@ -153,6 +153,7 @@ extension MovieQuizPresenter: QuestionFactoryDelegate {
         }
             
         currentQuestion = question
+        
         let viewModel = convert(model: question)
         DispatchQueue.main.async { [weak self] in
             self?.viewController?.show(quiz: viewModel)
