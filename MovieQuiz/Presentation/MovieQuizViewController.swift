@@ -8,8 +8,8 @@ final class MovieQuizViewController: UIViewController {
     
     @IBOutlet private weak var activityIndicator: UIActivityIndicatorView!
     
-    private let questionsAmount: Int = 10
     private var currentQuestion: QuizQuestion?
+    private let presenter = MovieQuizPresenter()
     
     private lazy var questionFactory: QuestionFactoryProtocol = {
         QuestionFactory(
@@ -22,14 +22,6 @@ final class MovieQuizViewController: UIViewController {
         let presenter = AlertPresenter()
         presenter.controller = self
         return presenter
-    }()
-
-    private lazy var quizStatistics: QuizStatistics = {
-        QuizStatistics(
-            currentQuestionIndex: 0,
-            correctAnswers: 0,
-            totalQuestions: questionsAmount
-        )
     }()
     
     private lazy var statisticsService: StatisticService = {
@@ -63,7 +55,7 @@ final class MovieQuizViewController: UIViewController {
         ) { [weak self] in
             guard let self = self else { return }
                 
-            self.resetQuizStatistics()
+            self.presenter.resetQuestionIndex()
             self.questionFactory.requestNextQuestion()
         }
             
@@ -79,25 +71,9 @@ final class MovieQuizViewController: UIViewController {
         imageView.layer.masksToBounds = true
         imageView.layer.cornerRadius = AppUiConstants.imageViewCornerRadius
     }
-    
-    private func resetQuizStatistics() {
-        quizStatistics = QuizStatistics(
-            currentQuestionIndex: 0,
-            correctAnswers: 0,
-            totalQuestions: questionsAmount
-        )
-    }
-    
+        
     private func showQuizQuestion() {
         questionFactory.requestNextQuestion()
-    }
-        
-    private func convert(model: QuizQuestion) -> QuizStepViewModel {
-        return QuizStepViewModel(
-            image: UIImage(data: model.image) ?? UIImage(),
-            question: model.text,
-            questionNumber: quizStatistics.questionNumberPrompt
-            )
     }
     
     private func show(quiz step: QuizStepViewModel) {
@@ -116,7 +92,7 @@ final class MovieQuizViewController: UIViewController {
             completion: { [weak self] in
                 guard let self = self else { return }
                 
-                self.resetQuizStatistics()
+                self.presenter.resetQuestionIndex()
                 self.showQuizQuestion()
             }
         )
@@ -125,7 +101,7 @@ final class MovieQuizViewController: UIViewController {
     }
     
     private func showAnswerResult(isCorrect: Bool) {
-        quizStatistics.correctAnswers += isCorrect ? 1 : 0
+        presenter.incrementCorrectStatIfAnswer(isCorrect: isCorrect)
 
         imageView.layer.borderWidth = AppUiConstants.imageViewBorderWidthWhenDisplayed
         imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
@@ -137,15 +113,15 @@ final class MovieQuizViewController: UIViewController {
     
     private func showResultView() {
         statisticsService.store(
-            correctAnswers: quizStatistics.correctAnswers,
-            totalQuestions: quizStatistics.totalQuestions
+            correctAnswers: presenter.correctAnswers,
+            totalQuestions: presenter.totalQuestions
         )
         
         let bestGameRecord = statisticsService.bestGameRecord
         let averageAccuracy = "\(String(format: "%.2f", statisticsService.totalAccuracy))%"
         
         let textToDisplay = """
-        \(quizStatistics.quizResultPrompt)
+        \(presenter.quizResultPrompt)
         Количество сыгранных квизов: \(statisticsService.gamesCount)
         Рекорд: \(bestGameRecord.correct)/\(bestGameRecord.total) (\(bestGameRecord.date.dateTimeString))
         Средняя точность: \(averageAccuracy)
@@ -161,10 +137,10 @@ final class MovieQuizViewController: UIViewController {
     }
     
     private func showNextQuestionOrResults() {
-        if quizStatistics.isQuizFinished {
+        if presenter.isLastQuestion() {
             showResultView()
         } else {
-            quizStatistics.currentQuestionIndex += 1
+            presenter.switchToNextQuestion()
             showQuizQuestion()
         }
     }
@@ -219,7 +195,7 @@ extension MovieQuizViewController: QuestionFactoryDelegate {
         }
             
         currentQuestion = question
-        let viewModel = convert(model: question)
+        let viewModel = presenter.convert(model: question)
         DispatchQueue.main.async { [weak self] in
             self?.show(quiz: viewModel)
         }
