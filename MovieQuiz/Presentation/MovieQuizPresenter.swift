@@ -9,6 +9,7 @@ import UIKit
 
 final class MovieQuizPresenter {
     private let questionsAmount: Int = 10
+    
     private static let tapBufferDelay: Double = 0.4
     
     private lazy var quizStatistics: QuizStatistics = {
@@ -24,27 +25,34 @@ final class MovieQuizPresenter {
         delay: tapBufferDelay
     )
     
-    private func noClickHandler() {
-        guard let currentQuestion = currentQuestion else {
-            return
-        }
-
-        viewController?.showAnswerResult(
-            isCorrect: !currentQuestion.correctAnswer
-        )
-    }
-    
-    private func yesClickHandler() {
+    private func didAnswer(isYes: Bool) {
         guard let currentQuestion = currentQuestion else {
             return
         }
         
         viewController?.showAnswerResult(
-            isCorrect: currentQuestion.correctAnswer
+            isCorrect: isYes == currentQuestion.correctAnswer
         )
     }
+    
+    private var currentQuestion: QuizQuestion?
+    
+    private func convert(model: QuizQuestion) -> QuizStepViewModel {
+        return QuizStepViewModel(
+            image: UIImage(data: model.image) ?? UIImage(),
+            question: model.text,
+            questionNumber: quizStatistics.questionNumberPrompt
+            )
+    }
+    
+    private func isLastQuestion() -> Bool {
+        quizStatistics.isQuizFinished
+    }
 
-    var currentQuestion: QuizQuestion?
+    private func switchToNextQuestion() {
+        quizStatistics.currentQuestionIndex += 1
+    }
+    
     weak var viewController: MovieQuizViewController?
     
     var correctAnswers: Int {
@@ -59,18 +67,6 @@ final class MovieQuizPresenter {
         quizStatistics.quizResultPrompt
     }
 
-    func convert(model: QuizQuestion) -> QuizStepViewModel {
-        return QuizStepViewModel(
-            image: UIImage(data: model.image) ?? UIImage(),
-            question: model.text,
-            questionNumber: quizStatistics.questionNumberPrompt
-            )
-    }
-    
-    func isLastQuestion() -> Bool {
-        quizStatistics.isQuizFinished
-    }
-    
     func resetQuestionIndex() {
         quizStatistics = QuizStatistics(
             currentQuestionIndex: 0,
@@ -78,24 +74,42 @@ final class MovieQuizPresenter {
             totalQuestions: questionsAmount
         )
     }
-    
-    func switchToNextQuestion() {
-        quizStatistics.currentQuestionIndex += 1
-    }
-    
+        
     func incrementCorrectStatIfAnswer(isCorrect: Bool) {
         quizStatistics.correctAnswers += isCorrect ? 1 : 0
     }
     
     func noButtonClicked() {
         tapBuffer.tap { [weak self] in
-            self?.noClickHandler()
+            self?.didAnswer(isYes: false)
         }
     }
     
     func yesButtonClicked() {
         tapBuffer.tap { [weak self] in
-            self?.yesClickHandler()
+            self?.didAnswer(isYes: true)
         }
     }
+    
+    func didReceiveNextQuestion(question: QuizQuestion?) {
+        guard let question = question else {
+            return
+        }
+            
+        currentQuestion = question
+        let viewModel = convert(model: question)
+        DispatchQueue.main.async { [weak self] in
+            self?.viewController?.show(quiz: viewModel)
+        }
+    }
+    
+    func showNextQuestionOrResults() {
+        if isLastQuestion() {
+            viewController?.showResultView()
+        } else {
+            switchToNextQuestion()
+            viewController?.showQuizQuestion()
+        }
+    }
+
 }

@@ -8,7 +8,6 @@ final class MovieQuizViewController: UIViewController {
     
     @IBOutlet private weak var activityIndicator: UIActivityIndicatorView!
     
-    private var currentQuestion: QuizQuestion?
     private let presenter = MovieQuizPresenter()
     
     private lazy var questionFactory: QuestionFactoryProtocol = {
@@ -67,19 +66,7 @@ final class MovieQuizViewController: UIViewController {
         imageView.layer.masksToBounds = true
         imageView.layer.cornerRadius = AppUiConstants.imageViewCornerRadius
     }
-        
-    private func showQuizQuestion() {
-        questionFactory.requestNextQuestion()
-    }
-    
-    private func show(quiz step: QuizStepViewModel) {
-        counterLabel.text = step.questionNumber
-        textLabel.text = step.question
-        imageView.image = step.image
-        
-        imageView.layer.borderWidth = 0
-    }
-    
+                
     private func show(quiz result: QuizResultsViewModel) {
         let alertInfo = AlertModel(
             title: result.title,
@@ -95,8 +82,12 @@ final class MovieQuizViewController: UIViewController {
         
         alertPresenter.show(model: alertInfo)
     }
-        
-    private func showResultView() {
+
+    func showQuizQuestion() {
+        questionFactory.requestNextQuestion()
+    }
+    
+    func showResultView() {
         statisticsService.store(
             correctAnswers: presenter.correctAnswers,
             totalQuestions: presenter.totalQuestions
@@ -120,16 +111,15 @@ final class MovieQuizViewController: UIViewController {
         
         show(quiz: viewModel)
     }
-    
-    private func showNextQuestionOrResults() {
-        if presenter.isLastQuestion() {
-            showResultView()
-        } else {
-            presenter.switchToNextQuestion()
-            showQuizQuestion()
-        }
+        
+    func show(quiz step: QuizStepViewModel) {
+        counterLabel.text = step.questionNumber
+        textLabel.text = step.question
+        imageView.image = step.image
+        
+        imageView.layer.borderWidth = 0
     }
-    
+
     func showAnswerResult(isCorrect: Bool) {
        presenter.incrementCorrectStatIfAnswer(isCorrect: isCorrect)
 
@@ -137,21 +127,18 @@ final class MovieQuizViewController: UIViewController {
        imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
        
        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-           self?.showNextQuestionOrResults()
+           self?.presenter.showNextQuestionOrResults()
        }
    }
 
     @IBAction private func noButtonClicked(_ sender: UIButton) {
-        presenter.currentQuestion = currentQuestion
         presenter.noButtonClicked()
     }
     
     @IBAction private func yesButtonClicked(_ sender: UIButton) {
-        presenter.currentQuestion = currentQuestion
-        presenter.noButtonClicked()
+        presenter.yesButtonClicked()
     }
 }
-
 
 extension MovieQuizViewController {    
     enum AppUiConstants {
@@ -163,15 +150,7 @@ extension MovieQuizViewController {
 extension MovieQuizViewController: QuestionFactoryDelegate {
     // MARK: - QuestionFactoryDelegate
     func didReceiveNextQuestion(question: QuizQuestion?) {
-        guard let question = question else {
-            return
-        }
-            
-        currentQuestion = question
-        let viewModel = presenter.convert(model: question)
-        DispatchQueue.main.async { [weak self] in
-            self?.show(quiz: viewModel)
-        }
+        presenter.didReceiveNextQuestion(question: question)
     }
     
     func didLoadDataFromServer() {
