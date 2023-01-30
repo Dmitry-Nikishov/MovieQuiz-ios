@@ -9,15 +9,11 @@ final class MovieQuizViewController: UIViewController {
     private var presenter: MovieQuizPresenter!
         
     private lazy var alertPresenter: AlertPresenter = {
-        let presenter = AlertPresenter()
-        presenter.controller = self
-        return presenter
+        let alertPresenter = AlertPresenter()
+        alertPresenter.controller = self
+        return alertPresenter
     }()
     
-    private lazy var statisticsService: StatisticService = {
-        StatisticServiceImplementation()
-    }()
-
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -72,24 +68,11 @@ final class MovieQuizViewController: UIViewController {
     }
         
     func showResultView() {
-        statisticsService.store(
-            correctAnswers: presenter.correctAnswers,
-            totalQuestions: presenter.totalQuestions
-        )
-        
-        let bestGameRecord = statisticsService.bestGameRecord
-        let averageAccuracy = "\(String(format: "%.2f", statisticsService.totalAccuracy))%"
-        
-        let textToDisplay = """
-        \(presenter.quizResultPrompt)
-        Количество сыгранных квизов: \(statisticsService.gamesCount)
-        Рекорд: \(bestGameRecord.correct)/\(bestGameRecord.total) (\(bestGameRecord.date.dateTimeString))
-        Средняя точность: \(averageAccuracy)
-        """
+        let message = presenter.makeResultsMessage()
         
         let viewModel = QuizResultsViewModel(
             title: "Этот раунд окончен!",
-            text: textToDisplay,
+            text: message,
             buttonText: "Сыграть ещё раз"
         )
         
@@ -100,21 +83,14 @@ final class MovieQuizViewController: UIViewController {
         counterLabel.text = step.questionNumber
         textLabel.text = step.question
         imageView.image = step.image
-        
         imageView.layer.borderWidth = 0
     }
 
-    func showAnswerResult(isCorrect: Bool) {
-       presenter.incrementCorrectStatIfAnswer(isCorrect: isCorrect)
-
-       imageView.layer.borderWidth = AppUiConstants.imageViewBorderWidthWhenDisplayed
-       imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
-       
-       DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-           self?.presenter.showNextQuestionOrResults()
-       }
-   }
-
+    func highlightImageBorder(isCorrectAnswer: Bool) {
+        imageView.layer.borderWidth = AppUiConstants.imageViewBorderWidthWhenDisplayed
+        imageView.layer.borderColor = isCorrectAnswer ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
+    }
+    
     @IBAction private func noButtonClicked(_ sender: UIButton) {
         presenter.noButtonClicked()
     }
