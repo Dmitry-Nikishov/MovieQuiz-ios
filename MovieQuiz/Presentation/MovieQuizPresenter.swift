@@ -9,6 +9,7 @@ import UIKit
 
 final class MovieQuizPresenter {
     private let questionsAmount: Int = 10
+    private static let tapBufferDelay: Double = 0.4
     
     private lazy var quizStatistics: QuizStatistics = {
         QuizStatistics(
@@ -17,6 +18,34 @@ final class MovieQuizPresenter {
             totalQuestions: questionsAmount
         )
     }()
+    
+    private let tapBuffer = TapBuffer(
+        queue: .main,
+        delay: tapBufferDelay
+    )
+    
+    private func noClickHandler() {
+        guard let currentQuestion = currentQuestion else {
+            return
+        }
+
+        viewController?.showAnswerResult(
+            isCorrect: !currentQuestion.correctAnswer
+        )
+    }
+    
+    private func yesClickHandler() {
+        guard let currentQuestion = currentQuestion else {
+            return
+        }
+        
+        viewController?.showAnswerResult(
+            isCorrect: currentQuestion.correctAnswer
+        )
+    }
+
+    var currentQuestion: QuizQuestion?
+    weak var viewController: MovieQuizViewController?
     
     var correctAnswers: Int {
         quizStatistics.correctAnswers
@@ -56,5 +85,17 @@ final class MovieQuizPresenter {
     
     func incrementCorrectStatIfAnswer(isCorrect: Bool) {
         quizStatistics.correctAnswers += isCorrect ? 1 : 0
+    }
+    
+    func noButtonClicked() {
+        tapBuffer.tap { [weak self] in
+            self?.noClickHandler()
+        }
+    }
+    
+    func yesButtonClicked() {
+        tapBuffer.tap { [weak self] in
+            self?.yesClickHandler()
+        }
     }
 }

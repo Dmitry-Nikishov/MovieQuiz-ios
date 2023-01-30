@@ -28,14 +28,10 @@ final class MovieQuizViewController: UIViewController {
         StatisticServiceImplementation()
     }()
 
-    private let tapBuffer = TapBuffer(
-        queue: .main,
-        delay: AppUiConstants.tapBufferDelay
-    )
-
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        presenter.viewController = self
         setupImageViewBorder()
         showLoadingIndicator()
         questionFactory.loadData()
@@ -99,18 +95,7 @@ final class MovieQuizViewController: UIViewController {
         
         alertPresenter.show(model: alertInfo)
     }
-    
-    private func showAnswerResult(isCorrect: Bool) {
-        presenter.incrementCorrectStatIfAnswer(isCorrect: isCorrect)
-
-        imageView.layer.borderWidth = AppUiConstants.imageViewBorderWidthWhenDisplayed
-        imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            self?.showNextQuestionOrResults()
-        }
-    }
-    
     private func showResultView() {
         statisticsService.store(
             correctAnswers: presenter.correctAnswers,
@@ -145,36 +130,25 @@ final class MovieQuizViewController: UIViewController {
         }
     }
     
-    private func noClickHandler() {
-        guard let currentQuestion = currentQuestion else {
-            return
-        }
+    func showAnswerResult(isCorrect: Bool) {
+       presenter.incrementCorrectStatIfAnswer(isCorrect: isCorrect)
 
-        showAnswerResult(
-            isCorrect: !currentQuestion.correctAnswer
-        )
-    }
-    
-    private func yesClickHandler() {
-        guard let currentQuestion = currentQuestion else {
-            return
-        }
-        
-        showAnswerResult(
-            isCorrect: currentQuestion.correctAnswer
-        )
-    }
-    
+       imageView.layer.borderWidth = AppUiConstants.imageViewBorderWidthWhenDisplayed
+       imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
+       
+       DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+           self?.showNextQuestionOrResults()
+       }
+   }
+
     @IBAction private func noButtonClicked(_ sender: UIButton) {
-        tapBuffer.tap { [weak self] in
-            self?.noClickHandler()
-        }
+        presenter.currentQuestion = currentQuestion
+        presenter.noButtonClicked()
     }
     
     @IBAction private func yesButtonClicked(_ sender: UIButton) {
-        tapBuffer.tap { [weak self] in
-            self?.yesClickHandler()
-        }
+        presenter.currentQuestion = currentQuestion
+        presenter.noButtonClicked()
     }
 }
 
@@ -183,7 +157,6 @@ extension MovieQuizViewController {
     enum AppUiConstants {
         static let imageViewBorderWidthWhenDisplayed: CGFloat = 8
         static let imageViewCornerRadius: CGFloat = 20
-        static let tapBufferDelay: Double = 0.4
     }
 }
 
