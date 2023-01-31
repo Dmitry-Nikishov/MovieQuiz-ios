@@ -8,6 +8,13 @@
 import XCTest
 @testable import MovieQuiz
 
+final class StatisticsServiceMock: StatisticService {
+    func store(correctAnswers count: Int, totalQuestions amount: Int) {}
+    var totalAccuracy: Double { 0 }
+    var gamesCount: Int { 0 }
+    var bestGameRecord: GameRecord { GameRecord.getDefault() }
+}
+
 final class MovieQuizViewControllerProtocolMock: MovieQuizViewControllerProtocol {
     var latestQuizStepViewModel: QuizStepViewModel?
     var latestQuizResultsViewModel: QuizResultsViewModel?
@@ -51,7 +58,10 @@ final class MovieQuizPresenterTests: XCTestCase {
     func testPresenterConvertModel() throws {
         let expectation = expectation(description: "Loading expectation")
         let viewControllerMock = MovieQuizViewControllerProtocolMock(expectation: expectation)
-        let sut = MovieQuizPresenter(viewController: viewControllerMock)
+        let sut = MovieQuizPresenter(
+            viewController: viewControllerMock,
+            statisticsService: StatisticsServiceMock()
+        )
         
         let emptyData = Data()
         let question = QuizQuestion(image: emptyData, text: "Question Text", correctAnswer: true)

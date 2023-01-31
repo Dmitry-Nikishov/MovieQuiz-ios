@@ -14,9 +14,9 @@ final class MovieQuizPresenter {
     
     private weak var viewController: MovieQuizViewControllerProtocol?
     
-    private lazy var statisticsService: StatisticService = {
-        StatisticServiceImplementation()
-    }()
+    private var currentQuestion: QuizQuestion?
+    
+    private let statisticsService: StatisticService
 
     private lazy var quizStatistics: QuizStatistics = {
         QuizStatistics(
@@ -40,8 +40,6 @@ final class MovieQuizPresenter {
         
         proceedWithAnswer(isCorrect: isYes == currentQuestion.correctAnswer)
     }
-    
-    private var currentQuestion: QuizQuestion?
     
     private func convert(model: QuizQuestion) -> QuizStepViewModel {
         return QuizStepViewModel(
@@ -91,8 +89,12 @@ final class MovieQuizPresenter {
         quizStatistics.correctAnswers += isCorrect ? 1 : 0
     }
     
-    init(viewController vc: MovieQuizViewControllerProtocol) {
+    init(
+        viewController vc: MovieQuizViewControllerProtocol,
+        statisticsService ss: StatisticService
+    ) {
         viewController = vc
+        statisticsService = ss
         
         questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
         questionFactory?.loadData()

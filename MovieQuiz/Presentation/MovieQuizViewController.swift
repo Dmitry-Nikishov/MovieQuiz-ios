@@ -17,7 +17,11 @@ final class MovieQuizViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        presenter = MovieQuizPresenter(viewController: self)
+        presenter = MovieQuizPresenter(
+            viewController: self,
+            statisticsService: StatisticServiceImplementation()
+        )
+        
         setupImageViewBorder()
         showLoadingIndicator()
     }
