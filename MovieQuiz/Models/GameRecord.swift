@@ -12,6 +12,10 @@ struct GameRecord: Codable, Comparable {
         return lhs.correct < rhs.correct
     }
     
+    static func getDefault() -> GameRecord {
+        GameRecord(correct: 0, total: 0, date: Date())
+    }
+    
     let correct: Int
     let total: Int
     let date: Date
